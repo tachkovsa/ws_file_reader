@@ -1,0 +1,89 @@
+﻿<%
+/** 
+ * DON'T USE THIS CODE ON THE PRODUCTION SERVER,
+ * IT'S A CRUTCH FOR DEVELOPMENT ONLY!
+ */
+
+function isAuth() {
+    try {
+        curUserID;
+        return {
+            error: false,
+            data: {
+                curUserID: curUserID
+            }
+        }
+    } catch(sErr) {
+        return { 
+            error: true,
+            error_code: 401,
+            error_text: 'User is not authorized'
+        };
+    }
+}
+
+function hasPermissions() {
+    try {
+        // TODO: Check is admin
+    } catch(sErr) {
+        // ...
+    }
+}
+
+function getDirectory(sDirectoryPath) {
+    sDirectoryPath = sDirectoryPath == undefined ? AppDirectoryPath() : sDirectoryPath;
+
+    var arrDirectories = ReadDirectoryByPath(sDirectoryPath);
+    var arrProcessedDirectories = [];
+
+    for (_sPath in arrDirectories) {
+        arrProcessedDirectories.push({
+            name: FileName(_sPath),
+            isDirectory: IsDirectory(_sPath),
+            modificationDate: GetFileModDate(_sPath),
+            path: _sPath
+        });
+    }
+
+    return {
+        error: false,
+        data: {
+            parentDirectoryPath: ParentDirectory(sDirectoryPath),
+            directoryPath: sDirectoryPath,
+            directoryChild: arrProcessedDirectories
+        }
+    }
+}
+
+function getFileData(sFilePath) {
+    var sFileData = LoadFileData(sFilePath);
+    var sTempFileUrl = ObtainSessionTempFile();
+    
+    PutUrlData(sTempFileUrl, sFileData);
+
+    return {
+        error: false,
+        data: {
+            fileUrl: sTempFileUrl
+        }
+    }
+}
+
+var sAction = Request.Query.GetOptProperty('method', null);
+switch (sAction) {
+    case 'getDirectory': 
+        var sDirectoryPath = Request.Query.GetOptProperty('path');
+        Response.Write(tools.object_to_text(getDirectory(sDirectoryPath), 'json'));
+        break;
+    case 'getFileData':
+        var sFilePath = Request.Query.GetOptProperty('path');
+        Response.Write(tools.object_to_text(getFileData(sFilePath), 'json'));
+        break;
+    default:
+        Response.Write(tools.object_to_text({
+            error: true,
+            error_text: 'Unknown method',
+            error_code: 404
+        }, 'json'));
+}
+%>
